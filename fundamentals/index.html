@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubernetes Fundamentals</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --bg-code: #0d1117;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-blue: #38bdf8;
+      --accent-purple: #a78bfa;
+      --accent-green: #4ade80;
+      --accent-orange: #fb923c;
+      --accent-pink: #f472b6;
+      --accent-cyan: #22d3ee;
+      --accent-red: #f87171;
+      --border: #334155;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+      scroll-behavior: smooth;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ── Hero Section ── */
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem 2rem;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1a4e 50%, #0f172a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '☸';
+      font-size: 20rem;
+      position: absolute;
+      opacity: 0.03;
+      animation: spin 60s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+    }
+
+    .hero .badge {
+      margin-top: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.2rem;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: var(--accent-blue);
+    }
+
+    /* ── Navigation ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.8rem 2rem;
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .nav a:hover {
+      color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    /* ── Main Content ── */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 3rem;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-header .icon {
+      font-size: 1.8rem;
+    }
+
+    .section-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s;
+      box-shadow: var(--shadow);
+    }
+
+    .card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(56, 189, 248, 0.1);
+    }
+
+    .card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--accent-blue);
+    }
+
+    .card p, .card li {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li {
+      padding: 0.3rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .card ul li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent-green);
+      font-weight: bold;
+    }
+
+    /* ── Collapsible ── */
+    .collapsible {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      transition: all 0.3s;
+      box-shadow: var(--shadow);
+    }
+
+    .collapsible:hover { border-color: rgba(56, 189, 248, 0.4); }
+
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .collapsible-header:hover { background: rgba(56, 189, 248, 0.05); }
+
+    .collapsible-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .collapsible-header .arrow {
+      transition: transform 0.3s;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .collapsible.open .collapsible-header .arrow {
+      transform: rotate(90deg);
+    }
+
+    .collapsible-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s ease;
+    }
+
+    .collapsible.open .collapsible-body {
+      max-height: 2000px;
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    /* ── Code Blocks ── */
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      position: relative;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    .code-label {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.75rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .inline-code {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-cyan);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    /* ── Tables ── */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-blue);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(56, 189, 248, 0.03); }
+
+    /* ── Flow Diagrams (ASCII) ── */
+    .flow {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 0.75rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent-green);
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* ── Highlights ── */
+    .highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .highlight.blue { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
+    .highlight.green { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+    .highlight.orange { background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); }
+    .highlight.purple { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+    .highlight.red { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+
+    /* ── Callout ── */
+    .callout {
+      border-left: 4px solid var(--accent-blue);
+      background: rgba(56, 189, 248, 0.05);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .callout.tip { border-left-color: var(--accent-green); background: rgba(74, 222, 128, 0.05); }
+    .callout.warn { border-left-color: var(--accent-orange); background: rgba(251, 146, 60, 0.05); }
+
+    /* ── Comparison Grid ── */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .comparison .item {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .comparison .item h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .comparison .item p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2.2rem; }
+      .comparison { grid-template-columns: 1fr; }
+      .nav { justify-content: flex-start; }
+    }
+
+    /* ── YAML syntax colors ── */
+    .yaml-key { color: var(--accent-cyan); }
+    .yaml-val { color: var(--accent-orange); }
+    .yaml-comment { color: var(--text-muted); font-style: italic; }
+    .yaml-str { color: var(--accent-green); }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════ HERO ════════════════ -->
+  <section class="hero">
+    <h1>☸ Kubernetes Fundamentals</h1>
+    <p class="subtitle">A hands-on reference guide — from containers to deployments, networking to rollouts.</p>
+    <div class="badge">📘 Study Notes &bull; K8s Core Concepts</div>
+  </section>
+
+  <!-- ════════════════ NAV ════════════════ -->
+  <nav class="nav">
+    <a href="#containers">🐳 Containers</a>
+    <a href="#architecture">🏗️ Architecture</a>
+    <a href="#pods">📦 Pods</a>
+    <a href="#yaml">📝 YAML</a>
+    <a href="#replicasets">🔄 ReplicaSets</a>
+    <a href="#deployments">🚀 Deployments</a>
+    <a href="#services">🌐 Services</a>
+    <a href="#namespaces">📂 Namespaces</a>
+    <a href="#commands">⌨️ Commands</a>
+    <a href="#cka-tips">🎯 CKA Tips</a>
+  </nav>
+
+  <div class="container">
+
+    <!-- ════════════════ CONTAINERS & KERNEL ════════════════ -->
+    <section class="section" id="containers">
+      <div class="section-header">
+        <span class="icon">🐳</span>
+        <h2>Containers & Kernel</h2>
+      </div>
+
+      <div class="card">
+        <h3>How Containers Work</h3>
+        <p>Containers share the <strong>host OS kernel</strong>. The stack is: Linux Kernel → OS (CentOS/Fedora/Ubuntu) → Containers.</p>
+        <ul>
+          <li>If the kernel is Linux, you can <strong>only run Linux containers</strong></li>
+          <li>Windows runs Linux containers via <strong>WSL2</strong> (a lightweight Linux VM)</li>
+          <li>You cannot natively run Linux containers on Windows or vice versa without a VM layer</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Docker vs containerd</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4>🐳 Docker</h4>
+            <p>Full platform: CLI, build tools, volume management, security, auth, networking + containerd inside</p>
+          </div>
+          <div class="item">
+            <h4>⚙️ containerd</h4>
+            <p>Just the container runtime — the core engine that actually runs containers</p>
+          </div>
+        </div>
+        <div class="flow">
+          Docker: CLI → Docker Engine → containerd → containers<br>
+          K8s: &nbsp; kubelet → containerd → containers <span style="color: var(--text-muted);">(cuts out the middleman)</span>
+        </div>
+        <div class="callout tip">
+          💡 K8s only needs containerd to orchestrate containers — no need for full Docker installation. K8s dropped Docker support (dockershim) in v1.24.
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ ARCHITECTURE ════════════════ -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <span class="icon">🏗️</span>
+        <h2>Cluster Architecture</h2>
+      </div>
+
+      <div class="card">
+        <h3>Master Node (Control Plane)</h3>
+        <ul>
+          <li><span class="highlight blue">kube-apiserver</span> — Front door to the cluster; all communication flows through it</li>
+          <li><span class="highlight orange">etcd</span> — Key-value store holding all cluster state and config</li>
+          <li><span class="highlight green">controller</span> — Runs control loops to maintain desired state (ReplicaSet, Deployment controllers)</li>
+          <li><span class="highlight purple">scheduler</span> — Assigns pods to nodes based on resource availability</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Worker Node</h3>
+        <ul>
+          <li><span class="highlight blue">kubelet</span> — Agent on each node; receives instructions from API server, ensures containers are running</li>
+          <li><span class="highlight green">Container Runtime</span> — Actually runs containers (containerd, CRI-O)</li>
+        </ul>
+        <div class="flow">
+          kube-apiserver ⟷ kubelet → containerd → containers
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Setting Up K8s</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4>💻 Local</h4>
+            <p>Docker Desktop, Minikube, kubeadm</p>
+          </div>
+          <div class="item">
+            <h4>☁️ Cloud</h4>
+            <p>AWS EKS, Google GKE, Azure AKS</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ PODS ════════════════ -->
+    <section class="section" id="pods">
+      <div class="section-header">
+        <span class="icon">📦</span>
+        <h2>Pods</h2>
+      </div>
+
+      <div class="card">
+        <h3>What is a Pod?</h3>
+        <p>The <strong>smallest deployable unit</strong> in Kubernetes. A pod wraps one or more containers.</p>
+        <ul>
+          <li>Containers in a pod share the <strong>same network</strong> (localhost), <strong>storage volumes</strong>, and <strong>lifecycle</strong></li>
+          <li>Best practice: <strong>one main container per pod</strong></li>
+          <li>Multiple containers in a pod = sidecars (helper containers)</li>
+        </ul>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🏍️ Sidecar Containers</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Like a motorcycle sidecar — a helper that rides alongside the main container:</p>
+          <ul>
+            <li><strong>Envoy proxy</strong> — handles networking/traffic</li>
+            <li><strong>Log shipper</strong> (Fluentd/Filebeat) — collects and forwards logs</li>
+            <li><strong>Config reloader</strong> — watches for config changes</li>
+          </ul>
+          <p style="margin-top: 0.5rem;">A sidecar <strong>is a regular container</strong> inside the same pod. K8s manages it together with the main container — same scheduling, same node, same lifecycle.</p>
+          <div class="comparison" style="margin-top: 1rem;">
+            <div class="item">
+              <h4>🐳 Without K8s</h4>
+              <p><code>docker run app1</code><br><code>docker run helper --link app1</code><br>Manual linking, fragile</p>
+            </div>
+            <div class="item">
+              <h4>☸ With K8s</h4>
+              <p>Both containers in one pod — automatic shared network, volumes, lifecycle. No --link needed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Creating a Pod</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4>⚡ Imperative</h4>
+            <pre><code>kubectl run nginx --image nginx</code></pre>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem;"><code>--image</code> is required — no default image!</p>
+          </div>
+          <div class="item">
+            <h4>📄 Declarative</h4>
+            <pre><code>kubectl apply -f pod.yml</code></pre>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem;">Preferred for production — version controlled, repeatable</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Useful Pod Commands</h3>
+        <pre><code><span class="yaml-comment"># List pods</span>
+kubectl get pods
+kubectl get pods -o wide    <span class="yaml-comment"># shows NODE, IP</span>
+
+<span class="yaml-comment"># Describe (image, status, events, node)</span>
+kubectl describe pod &lt;podname&gt;
+
+<span class="yaml-comment"># Quick image check</span>
+kubectl get pod &lt;podname&gt; -o jsonpath='{.spec.containers[*].image}'</code></pre>
+      </div>
+    </section>
+
+    <!-- ════════════════ YAML ════════════════ -->
+    <section class="section" id="yaml">
+      <div class="section-header">
+        <span class="icon">📝</span>
+        <h2>YAML Structure</h2>
+      </div>
+
+      <div class="card">
+        <h3>The 4 Required Fields — A K M S</h3>
+        <p>Every K8s YAML manifest needs these four top-level fields:</p>
+        <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>            <span class="yaml-comment"># A — API version</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Pod</span>                 <span class="yaml-comment"># K — resource type</span>
+<span class="yaml-key">metadata:</span>                   <span class="yaml-comment"># M — name, labels, namespace</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-app</span>
+<span class="yaml-key">spec:</span>                       <span class="yaml-comment"># S — desired state / config</span>
+  <span class="yaml-key">containers:</span>
+    - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+      </div>
+
+      <div class="card">
+        <h3>API Version Reference</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Kind</th><th>apiVersion</th><th>Category</th></tr></thead>
+            <tbody>
+              <tr><td>Pod</td><td><span class="inline-code">v1</span></td><td>Core</td></tr>
+              <tr><td>Service</td><td><span class="inline-code">v1</span></td><td>Core</td></tr>
+              <tr><td>ReplicaSet</td><td><span class="inline-code">apps/v1</span></td><td>Apps</td></tr>
+              <tr><td>Deployment</td><td><span class="inline-code">apps/v1</span></td><td>Apps</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">💡 Core resources (Pod, Service) → <code>v1</code> &nbsp;|&nbsp; App-level resources (ReplicaSet, Deployment) → <code>apps/v1</code></div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📋 YAML Templates for Each Object</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <h4 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Pod</h4>
+          <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Pod</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-app</span>
+  <span class="yaml-key">labels:</span>
+    <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">containers:</span>
+    - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">ReplicaSet</h4>
+          <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">apps/v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">ReplicaSet</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-rs</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">replicas:</span> <span class="yaml-val">3</span>
+  <span class="yaml-key">selector:</span>
+    <span class="yaml-key">matchLabels:</span>
+      <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+  <span class="yaml-key">template:</span>          <span class="yaml-comment"># pod spec goes here</span>
+    <span class="yaml-key">metadata:</span>
+      <span class="yaml-key">labels:</span>
+        <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+    <span class="yaml-key">spec:</span>
+      <span class="yaml-key">containers:</span>
+        - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+          <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+
+          <h4 style="color: var(--accent-purple); margin: 1rem 0 0.5rem;">Deployment</h4>
+          <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">apps/v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Deployment</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-deploy</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">replicas:</span> <span class="yaml-val">3</span>
+  <span class="yaml-key">strategy:</span>
+    <span class="yaml-key">type:</span> <span class="yaml-val">RollingUpdate</span>
+  <span class="yaml-key">selector:</span>
+    <span class="yaml-key">matchLabels:</span>
+      <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+  <span class="yaml-key">template:</span>
+    <span class="yaml-key">metadata:</span>
+      <span class="yaml-key">labels:</span>
+        <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+    <span class="yaml-key">spec:</span>
+      <span class="yaml-key">containers:</span>
+        - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+          <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">Service (NodePort)</h4>
+          <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Service</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-service</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">type:</span> <span class="yaml-val">NodePort</span>
+  <span class="yaml-key">selector:</span>              <span class="yaml-comment"># no matchLabels — direct!</span>
+    <span class="yaml-key">app:</span> <span class="yaml-str">my-app</span>
+  <span class="yaml-key">ports:</span>
+    - <span class="yaml-key">port:</span> <span class="yaml-val">80</span>
+      <span class="yaml-key">targetPort:</span> <span class="yaml-val">80</span>
+      <span class="yaml-key">nodePort:</span> <span class="yaml-val">30008</span></code></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Selector Syntax Difference</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4 style="color: var(--accent-purple);">Deployment / ReplicaSet</h4>
+            <pre><code><span class="yaml-key">selector:</span>
+  <span class="yaml-key">matchLabels:</span>
+    <span class="yaml-key">app:</span> <span class="yaml-str">nginx</span></code></pre>
+          </div>
+          <div class="item">
+            <h4 style="color: var(--accent-orange);">Service</h4>
+            <pre><code><span class="yaml-key">selector:</span>
+  <span class="yaml-key">app:</span> <span class="yaml-str">nginx</span>
+<span class="yaml-comment"># direct — no matchLabels</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ REPLICASETS ════════════════ -->
+    <section class="section" id="replicasets">
+      <div class="section-header">
+        <span class="icon">🔄</span>
+        <h2>ReplicaSets</h2>
+      </div>
+
+      <div class="card">
+        <h3>ReplicationController → ReplicaSet</h3>
+        <p>ReplicationController is the old way. ReplicaSet is the modern replacement with one key addition: <strong>selector</strong>.</p>
+        <ul>
+          <li>The <span class="inline-code">selector</span> with <span class="inline-code">matchLabels</span> can monitor pods created <strong>outside</strong> of the ReplicaSet</li>
+          <li>If you want 6 replicas and 3 matching pods already exist → only <strong>3 more</strong> are created</li>
+          <li>ReplicaSet <strong>adopts</strong> existing pods with matching labels</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Writing a ReplicaSet</h3>
+        <p>Simple recipe: in <span class="inline-code">spec.template</span>, paste your pod's <span class="inline-code">metadata</span> + <span class="inline-code">spec</span> (without <span class="inline-code">apiVersion</span> and <span class="inline-code">kind</span>).</p>
+        <div class="flow">
+          ReplicaSet spec → template → { pod metadata + pod spec }
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════ DEPLOYMENTS ════════════════ -->
+    <section class="section" id="deployments">
+      <div class="section-header">
+        <span class="icon">🚀</span>
+        <h2>Deployments</h2>
+      </div>
+
+      <div class="card">
+        <h3>Deployment vs ReplicaSet</h3>
+        <div class="flow">Deployment → manages → ReplicaSet → manages → Pods</div>
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table>
+            <thead><tr><th>Feature</th><th>ReplicaSet</th><th>Deployment</th></tr></thead>
+            <tbody>
+              <tr><td>Ensures replicas</td><td>✅</td><td>✅ (via RS)</td></tr>
+              <tr><td>Rolling updates</td><td>❌</td><td>✅</td></tr>
+              <tr><td>Rollback</td><td>❌</td><td>✅</td></tr>
+              <tr><td>Version history</td><td>❌</td><td>✅</td></tr>
+              <tr><td>Pause / Resume</td><td>❌</td><td>✅</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">💡 In practice, you <strong>never</strong> create a ReplicaSet directly — always use a Deployment.</div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🔄 Deployment Strategies</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Strategy</th><th>Built-in?</th><th>Downtime?</th><th>How</th></tr></thead>
+              <tbody>
+                <tr><td><strong>RollingUpdate</strong></td><td>✅ Default</td><td>No</td><td>Gradually replace pods one by one</td></tr>
+                <tr><td><strong>Recreate</strong></td><td>✅</td><td>Yes ⚠️</td><td>Kill all old, then create all new</td></tr>
+                <tr><td><strong>Blue-Green</strong></td><td>❌ Manual</td><td>No</td><td>Deploy new alongside old, switch service selector</td></tr>
+                <tr><td><strong>Canary</strong></td><td>❌ Manual</td><td>No</td><td>Route small % of traffic to new version</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">RollingUpdate (default)</h4>
+          <div class="flow">
+            Old: ● ● ● ● &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; New: &nbsp;<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ● ● ● &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ○<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ● ● &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ○ ○<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ● &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ○ ○ ○<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ○ ○ ○ ○
+          </div>
+          <pre><code><span class="yaml-key">spec:</span>
+  <span class="yaml-key">strategy:</span>
+    <span class="yaml-key">type:</span> <span class="yaml-val">RollingUpdate</span>
+    <span class="yaml-key">rollingUpdate:</span>
+      <span class="yaml-key">maxUnavailable:</span> <span class="yaml-val">1</span>   <span class="yaml-comment"># max pods killed at a time</span>
+      <span class="yaml-key">maxSurge:</span> <span class="yaml-val">1</span>          <span class="yaml-comment"># max extra pods created</span></code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">Identifying Strategy from Logs</h4>
+          <p>Use <span class="inline-code">kubectl describe deployment &lt;name&gt;</span> and check Events:</p>
+          <ul>
+            <li><strong>Recreate:</strong> Scale down to 0 first → then scale up</li>
+            <li><strong>Rolling:</strong> Interleaved scale up and scale down</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🔙 Rollouts, History & Rollback</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p><span class="inline-code">kubectl rollout</span> manages the rollout process — it monitors and controls how updates are applied.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td><code>rollout status</code></td><td>Watch live progress of the update</td></tr>
+                <tr><td><code>rollout history</code></td><td>View all past revisions</td></tr>
+                <tr><td><code>rollout undo</code></td><td>Rollback to previous (or specific) revision</td></tr>
+                <tr><td><code>rollout pause</code></td><td>Pause mid-rollout</td></tr>
+                <tr><td><code>rollout resume</code></td><td>Resume a paused rollout</td></tr>
+                <tr><td><code>rollout restart</code></td><td>Trigger a fresh rolling restart</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-cyan); margin: 1rem 0 0.5rem;">How Rollback Works</h4>
+          <p>Every revision is stored as a <strong>ReplicaSet</strong> in <strong>etcd</strong>. Old ReplicaSets are kept but scaled to 0. On rollback, K8s simply scales up the old ReplicaSet.</p>
+          <div class="flow">
+            etcd stores:<br>
+            ReplicaSet rev1 → image: nginx:1.24 (scaled to 0)<br>
+            ReplicaSet rev2 → image: nginx:1.25 (scaled to 0)<br>
+            ReplicaSet rev3 → image: nginx:1.26 (active)
+          </div>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">CHANGE-CAUSE vs Actual Data</h4>
+          <div class="comparison">
+            <div class="item">
+              <h4 style="color: var(--accent-orange);">CHANGE-CAUSE</h4>
+              <p>Just a human-readable annotation. K8s doesn't use it for rollback. Can be null — doesn't matter.</p>
+            </div>
+            <div class="item">
+              <h4 style="color: var(--accent-blue);">ReplicaSets in etcd</h4>
+              <p>Full API objects with complete pod spec. This is what K8s actually uses for rollback.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>💾 --save-config vs --record</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Flag</th><th>What it saves</th><th>Annotation</th></tr></thead>
+              <tbody>
+                <tr><td><code>--save-config</code></td><td>Full resource spec (for <code>apply</code> 3-way merge)</td><td><code>kubectl.kubernetes.io/last-applied-configuration</code></td></tr>
+                <tr><td><code>--record</code> <span class="highlight red">deprecated</span></td><td>The command you ran (for rollout history)</td><td><code>kubernetes.io/change-cause</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout warn">
+            ⚠️ If you use <code>kubectl create</code> (without <code>--save-config</code>) and then <code>kubectl apply</code>, you'll see a warning about missing <code>last-applied-configuration</code>. The apply still works, but uses a 2-way merge instead of 3-way.
+          </div>
+          <div class="table-wrapper" style="margin-top: 1rem;">
+            <table>
+              <thead><tr><th>Command</th><th>Saves last-applied-configuration?</th></tr></thead>
+              <tbody>
+                <tr><td><code>kubectl apply</code></td><td>✅ Always</td></tr>
+                <tr><td><code>kubectl create --save-config</code></td><td>✅ Yes</td></tr>
+                <tr><td><code>kubectl create</code></td><td>❌ No</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout tip">💡 Best practice: always use <code>kubectl apply</code> from the start to keep things consistent.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>create vs apply</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th></th><th>create</th><th>apply</th></tr></thead>
+            <tbody>
+              <tr><td><strong>If exists?</strong></td><td>❌ Errors out</td><td>✅ Updates delta</td></tr>
+              <tr><td><strong>Idempotent?</strong></td><td>No</td><td>Yes</td></tr>
+              <tr><td><strong>Use case</strong></td><td>One-off creation</td><td>Ongoing management</td></tr>
+              <tr><td><strong>Tracks changes?</strong></td><td>No</td><td>Yes (via annotations)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">💡 Editing the YAML and running <code>kubectl apply</code> is always preferred over imperative commands like <code>set image</code> or <code>scale</code> — version controlled, reproducible, auditable.</div>
+      </div>
+    </section>
+
+    <!-- ════════════════ SERVICES ════════════════ -->
+    <section class="section" id="services">
+      <div class="section-header">
+        <span class="icon">🌐</span>
+        <h2>Services & Networking</h2>
+      </div>
+
+      <div class="card">
+        <h3>Service Types</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Type</th><th>Internal</th><th>External</th><th>Use Case</th></tr></thead>
+            <tbody>
+              <tr><td><strong>ClusterIP</strong> <span class="highlight blue">default</span></td><td>✅</td><td>❌</td><td>Backend services (DB, cache, APIs)</td></tr>
+              <tr><td><strong>NodePort</strong></td><td>✅</td><td>✅ via NodeIP:30000-32767</td><td>Expose apps externally</td></tr>
+              <tr><td><strong>LoadBalancer</strong></td><td>✅</td><td>✅ via cloud LB (ELB)</td><td>Production external access</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top: 0.75rem; color: var(--text-secondary);">Each type builds on the previous: LoadBalancer ⊃ NodePort ⊃ ClusterIP</p>
+      </div>
+
+      <div class="card">
+        <h3>The 3 Ports</h3>
+        <div class="flow">
+          External → Node:<span style="color: var(--accent-orange);">30008</span> → Service:<span style="color: var(--accent-blue);">80</span> → Pod:<span style="color: var(--accent-green);">80</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ③ NodePort&nbsp;&nbsp;&nbsp; ② Port&nbsp;&nbsp;&nbsp;&nbsp; ① TargetPort
+        </div>
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>What it is</th><th>Can differ?</th></tr></thead>
+            <tbody>
+              <tr><td>③</td><td><strong>nodePort</strong></td><td>External port on the node (30000-32767)</td><td>Yes</td></tr>
+              <tr><td>②</td><td><strong>port</strong></td><td>Service's internal port</td><td>Yes — can be anything</td></tr>
+              <tr><td>①</td><td><strong>targetPort</strong></td><td>Actual port on the pod/container</td><td>Must match container's port</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>ClusterIP — Internal Only</h3>
+        <p>Used for communication between pods inside the cluster.</p>
+        <div class="flow">
+          User → LoadBalancer → Frontend Pod<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Frontend → <span style="color: var(--accent-blue);">ClusterIP</span> → Backend Pod<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Backend → <span style="color: var(--accent-blue);">ClusterIP</span> → Database Pod
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Service Selector</h3>
+        <p>The selector says: <em>"Any traffic that comes to <strong>me</strong>, forward to pods with <strong>these labels</strong>."</em></p>
+        <p>If multiple pods match → Service <strong>load balances</strong> across them (round-robin).</p>
+        <div class="flow">
+          Request → Service → Pod 1 (app: nginx)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; → Pod 2 (app: nginx) &nbsp;← load balanced<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; → Pod 3 (app: nginx)
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Service DNS</h3>
+        <p>When you create a service, K8s creates a DNS entry automatically:</p>
+        <div class="flow">
+          <span style="color: var(--accent-cyan);">service-name</span>.<span style="color: var(--accent-purple);">namespace</span>.svc.cluster.local
+        </div>
+        <div class="comparison">
+          <div class="item">
+            <h4 style="color: var(--accent-green);">Same namespace</h4>
+            <p>Just use <span class="inline-code">service-name</span> directly</p>
+          </div>
+          <div class="item">
+            <h4 style="color: var(--accent-orange);">Cross namespace</h4>
+            <p>Use full DNS: <span class="inline-code">service-name.namespace.svc.cluster.local</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>CNI Plugins</h3>
+        <p>Container Network Interface plugins handle pod-to-pod networking: <strong>Flannel</strong>, <strong>Calico</strong>, <strong>Cilium</strong>, <strong>Cisco ACI</strong>, <strong>VMware NSX</strong>.</p>
+        <div class="callout tip">💡 In managed K8s (AWS EKS, GKE, AKS), the cloud provider handles CNI for you — e.g., AWS uses its own <strong>VPC CNI plugin</strong> that assigns real VPC IPs to pods.</div>
+      </div>
+    </section>
+
+    <!-- ════════════════ NAMESPACES ════════════════ -->
+    <section class="section" id="namespaces">
+      <div class="section-header">
+        <span class="icon">📂</span>
+        <h2>Namespaces</h2>
+      </div>
+
+      <div class="card">
+        <h3>What are Namespaces?</h3>
+        <p>Virtual clusters inside your K8s cluster — used to <strong>isolate and organize</strong> resources. Think of them like folders.</p>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Namespace</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><span class="inline-code">default</span></td><td>Where resources go if you don't specify one</td></tr>
+              <tr><td><span class="inline-code">kube-system</span></td><td>K8s internal components (API server, scheduler, etc.)</td></tr>
+              <tr><td><span class="inline-code">kube-public</span></td><td>Publicly accessible data</td></tr>
+              <tr><td><span class="inline-code">kube-node-lease</span></td><td>Node heartbeat tracking</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Creating a Namespace</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4 style="color: var(--accent-green);">⚡ Imperative</h4>
+            <pre><code>kubectl create namespace dev</code></pre>
+          </div>
+          <div class="item">
+            <h4 style="color: var(--accent-purple);">📄 Declarative</h4>
+            <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Namespace</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">dev</span></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Working with Namespaces</h3>
+        <pre><code><span class="yaml-comment"># Create resource in a namespace (CLI flag)</span>
+kubectl apply -f pod.yml --namespace dev
+
+<span class="yaml-comment"># Or set namespace in YAML metadata</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">my-pod</span>
+  <span class="yaml-key">namespace:</span> <span class="yaml-str">dev</span>
+
+<span class="yaml-comment"># Get pods from a specific namespace</span>
+kubectl get pods --namespace prod
+
+<span class="yaml-comment"># Get pods across ALL namespaces</span>
+kubectl get pods --all-namespaces
+
+<span class="yaml-comment"># Switch default namespace (no more --namespace flag needed)</span>
+kubectl config set-context --current --namespace=dev</code></pre>
+      </div>
+
+      <div class="card">
+        <h3>ResourceQuota</h3>
+        <p>Limit resources per namespace using <span class="inline-code">kind: ResourceQuota</span>:</p>
+        <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">ResourceQuota</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">dev-quota</span>
+  <span class="yaml-key">namespace:</span> <span class="yaml-str">dev</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">hard:</span>
+    <span class="yaml-key">pods:</span> <span class="yaml-val">"10"</span>
+    <span class="yaml-key">requests.cpu:</span> <span class="yaml-val">"4"</span>
+    <span class="yaml-key">requests.memory:</span> <span class="yaml-val">4Gi</span>
+    <span class="yaml-key">limits.cpu:</span> <span class="yaml-val">"8"</span>
+    <span class="yaml-key">limits.memory:</span> <span class="yaml-val">8Gi</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ════════════════ COMMANDS CHEAT SHEET ════════════════ -->
+    <section class="section" id="commands">
+      <div class="section-header">
+        <span class="icon">⌨️</span>
+        <h2>Commands Cheat Sheet</h2>
+      </div>
+
+      <div class="collapsible open">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📦 Pod Commands</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code>kubectl run nginx --image nginx          <span class="yaml-comment"># create pod</span>
+kubectl get pods                          <span class="yaml-comment"># list pods</span>
+kubectl get pods -o wide                  <span class="yaml-comment"># list with node/IP info</span>
+kubectl describe pod &lt;name&gt;               <span class="yaml-comment"># detailed info</span>
+kubectl delete pod &lt;name&gt;                 <span class="yaml-comment"># delete pod</span></code></pre>
+        </div>
+      </div>
+
+      <div class="collapsible open">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🚀 Deployment Commands</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code><span class="yaml-comment"># Create & Update</span>
+kubectl create deployment myapp --image=nginx
+kubectl apply -f deployment.yml
+kubectl set image deployment/myapp nginx=nginx:1.25
+kubectl edit deployment myapp
+
+<span class="yaml-comment"># Scale</span>
+kubectl scale deployment myapp --replicas=5
+
+<span class="yaml-comment"># Rollout</span>
+kubectl rollout status deployment/myapp
+kubectl rollout history deployment/myapp
+kubectl rollout history deployment/myapp --revision=2
+kubectl rollout undo deployment/myapp
+kubectl rollout undo deployment/myapp --to-revision=1
+kubectl rollout pause deployment/myapp
+kubectl rollout resume deployment/myapp
+kubectl rollout restart deployment/myapp
+
+<span class="yaml-comment"># Info & Delete</span>
+kubectl get deployments
+kubectl describe deployment myapp
+kubectl delete deployment myapp</code></pre>
+        </div>
+      </div>
+
+      <div class="collapsible open">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🌐 Service Commands</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code>kubectl apply -f service.yml
+kubectl get services
+kubectl describe service &lt;name&gt;
+kubectl delete service &lt;name&gt;</code></pre>
+        </div>
+      </div>
+
+      <div class="collapsible open">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🔧 General</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code>kubectl get all                           <span class="yaml-comment"># all resources</span>
+kubectl get replicasets                   <span class="yaml-comment"># see RS (incl. old revisions)</span>
+kubectl apply -f &lt;file&gt;                   <span class="yaml-comment"># create or update</span>
+kubectl create -f &lt;file&gt;                  <span class="yaml-comment"># create only (fails if exists)</span>
+kubectl delete -f &lt;file&gt;                  <span class="yaml-comment"># delete resource</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+    <!-- ════════════════ CKA TIPS ════════════════ -->
+    <section class="section" id="cka-tips">
+      <div class="section-header">
+        <span class="icon">🎯</span>
+        <h2>CKA Exam Tips</h2>
+      </div>
+
+      <div class="card">
+        <h3>⚡ The --dry-run Trick (YAML Generator)</h3>
+        <p>Don't write YAML from scratch! Use <span class="inline-code">--dry-run=client -o yaml</span> to generate it automatically.</p>
+
+        <div class="comparison" style="margin-top: 1rem;">
+          <div class="item">
+            <h4 style="color: var(--accent-green);">Simple task? Just run it</h4>
+            <pre><code><span class="yaml-comment"># "Create a pod named nginx with image nginx"</span>
+kubectl run nginx --image=nginx
+<span class="yaml-comment"># Done! One command, full marks ✅</span></code></pre>
+          </div>
+          <div class="item">
+            <h4 style="color: var(--accent-purple);">Complex task? Generate → Edit → Apply</h4>
+            <pre><code><span class="yaml-comment"># Step 1: Generate YAML</span>
+kubectl run nginx --image=nginx \
+  --dry-run=client -o yaml > pod.yaml
+
+<span class="yaml-comment"># Step 2: Edit (add volumes, probes, etc.)</span>
+vi pod.yaml
+
+<span class="yaml-comment"># Step 3: Apply</span>
+kubectl apply -f pod.yaml</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📋 Imperative Commands Cheat Sheet</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code><span class="yaml-comment"># ── Pod ──</span>
+kubectl run nginx --image=nginx                                          <span class="yaml-comment"># create pod</span>
+kubectl run nginx --image=nginx --dry-run=client -o yaml                 <span class="yaml-comment"># generate YAML only</span>
+
+<span class="yaml-comment"># ── Pod + Service in one shot (important!) ──</span>
+kubectl run httpd --image=httpd:alpine --port=80 --expose                <span class="yaml-comment"># creates pod + ClusterIP service 🔥</span>
+
+<span class="yaml-comment"># ── Service (expose existing pod) ──</span>
+kubectl expose pod redis --port=6379 --name=redis-service --type=ClusterIP
+kubectl expose pod redis --port=6379 --dry-run=client -o yaml            <span class="yaml-comment"># generate YAML only</span>
+
+<span class="yaml-comment"># ── Deployment ──</span>
+kubectl create deployment nginx --image=nginx                            <span class="yaml-comment"># create deployment</span>
+kubectl create deployment webapp --image=kodekloud/webapp-color --replicas=3
+kubectl create deployment nginx --image=nginx --dry-run=client -o yaml   <span class="yaml-comment"># generate YAML only</span>
+
+<span class="yaml-comment"># ── Save to file and edit ──</span>
+kubectl create deployment nginx --image=nginx \
+  --replicas=4 --dry-run=client -o yaml > deploy.yaml                    <span class="yaml-comment"># save to file</span></code></pre>
+
+          <div class="callout tip">
+            💡 Two flags to remember:<br>
+            <span class="inline-code">--dry-run=client</span> → "pretend mode, don't create"<br>
+            <span class="inline-code">-o yaml</span> → "show me the YAML output"
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🧠 When to use Command vs YAML?</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Scenario</th><th>Approach</th></tr></thead>
+            <tbody>
+              <tr><td>Simple pod/deployment (name + image)</td><td><span class="highlight green">Command directly</span></td></tr>
+              <tr><td>Need env vars, volumes, probes, limits</td><td><span class="highlight purple">Generate YAML → edit → apply</span></td></tr>
+              <tr><td>Multiple containers (sidecars)</td><td><span class="highlight purple">Generate YAML → edit → apply</span></td></tr>
+              <tr><td>Custom labels, node selectors</td><td><span class="highlight purple">Generate YAML → edit → apply</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          ⚠️ Time is precious in CKA — if a one-liner works, use it! Save YAML editing for questions that need it.
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🔍 kubectl explain & api-resources</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">kubectl explain — Built-in YAML docs</h4>
+          <p>No need to leave the terminal — drill down into any resource's YAML structure:</p>
+          <pre><code>kubectl explain pods                          <span class="yaml-comment"># top-level fields</span>
+kubectl explain pods.spec                     <span class="yaml-comment"># drill into spec</span>
+kubectl explain pods.spec.containers          <span class="yaml-comment"># deeper</span>
+kubectl explain pods.spec.containers.image    <span class="yaml-comment"># specific field</span>
+kubectl explain deployment.spec.replicas      <span class="yaml-comment"># shows data type too</span></code></pre>
+          <div class="callout tip">
+            💡 <code>explain</code> shows the <strong>data type</strong> of each field — <code>&lt;integer&gt;</code>, <code>&lt;string&gt;</code>, <code>&lt;[]Object&gt;</code>, etc. Super helpful to know what value to put.
+          </div>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">kubectl api-resources — Discover everything</h4>
+          <p>Lists all resource types with short names, API group, and whether they're namespaced:</p>
+          <pre><code>kubectl api-resources    <span class="yaml-comment"># shows: NAME, SHORTNAMES, APIVERSION, NAMESPACED, KIND</span></code></pre>
+          <p style="margin-top: 0.5rem;">Handy shortcuts you'll discover: <span class="inline-code">po</span> (pods), <span class="inline-code">svc</span> (services), <span class="inline-code">deploy</span> (deployments), <span class="inline-code">rs</span> (replicasets)</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔑 --dry-run=client vs --dry-run=server</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Flag</th><th>Validates where?</th><th>Speed</th></tr></thead>
+            <tbody>
+              <tr><td><span class="inline-code">--dry-run=client</span></td><td>Locally on your machine — no API call</td><td>Fast ⚡</td></tr>
+              <tr><td><span class="inline-code">--dry-run=server</span></td><td>Sends to API server but doesn't create</td><td>Slower but more accurate</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top: 0.5rem; color: var(--text-secondary);">Use <span class="inline-code">client</span> 99% of the time — it's faster and works even if the cluster is down.</p>
+      </div>
+
+      <div class="card">
+        <h3>📌 Bookmark for Exam</h3>
+        <p><a href="https://kubernetes.io/docs/reference/kubectl/conventions/" target="_blank" style="color: var(--accent-blue); text-decoration: underline;">kubectl Usage Conventions</a> — Official reference for imperative commands. Allowed during the exam!</p>
+      </div>
+    </section>
+
+  <!-- ════════════════ FOOTER ════════════════ -->
+  <footer class="footer">
+    <p>☸ Kubernetes Fundamentals — Study Notes</p>
+    <p style="margin-top: 0.5rem;">Last updated: May 2026</p>
+  </footer>
+
+  <script>
+    function toggleCollapsible(header) {
+      const collapsible = header.parentElement;
+      collapsible.classList.toggle('open');
+    }
+
+    // Animate sections on scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.section').forEach(section => {
+      section.style.opacity = '0';
+      section.style.transform = 'translateY(20px)';
+      section.style.transition = 'all 0.6s ease-out';
+      observer.observe(section);
+    });
+  </script>
+
+</body>
+</html>
