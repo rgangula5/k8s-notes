@@ -1160,6 +1160,18 @@ kubectl taint nodes node1 app=blue:NoSchedule-</code></pre>
           <div class="callout warn">
             ⚠️ Taints & tolerations <strong>don't guarantee</strong> a pod goes to a specific node — they only <strong>prevent</strong> pods from going where they shouldn't. A tolerated pod can still land on a non-tainted node.
           </div>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">📝 Scenarios</h4>
+          <div class="flow" style="text-align: left;">
+Node1 (tainted: app=blue:NoSchedule):<br>
+&nbsp;&nbsp;Pod with matching toleration &nbsp;→ CAN go ✅ (not guaranteed)<br>
+&nbsp;&nbsp;Pod without toleration &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Blocked ❌<br><br>
+Node2 (no taint):<br>
+&nbsp;&nbsp;Pod with toleration &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ CAN go ✅<br>
+&nbsp;&nbsp;Pod without toleration &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ CAN go ✅<br><br>
+💡 Toleration = "I CAN go there" not "I MUST go there"
+          </div>
+
           <div class="callout tip">
             💡 The master node has a taint by default: <span class="inline-code">node-role.kubernetes.io/control-plane:NoSchedule</span> — that's why your pods never get scheduled on it.
           </div>
@@ -1432,9 +1444,50 @@ crictl ps</code></pre>
               <thead><tr><th>Policy</th><th>Behavior</th></tr></thead>
               <tbody>
                 <tr><td><span class="inline-code">PreemptLowerPriority</span></td><td><strong>Default</strong> — evict lower priority pods to make room</td></tr>
-                <tr><td><span class="inline-code">Never</span></td><td>Don't evict — just wait in the queue until resources free up</td></tr>
+                <tr><td><span class="inline-code">Never</span></td><td>Don't evict — just wait in the queue (highest priority gets resources first)</td></tr>
               </tbody>
             </table>
+          </div>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">📝 Scenarios</h4>
+
+          <p><strong>Scenario 1: PreemptLowerPriority (default)</strong></p>
+          <div class="flow" style="text-align: left;">
+Node: 4 CPU total, fully used<br><br>
+Running:<br>
+&nbsp;&nbsp;Pod A (priority: 100) → using 2 CPU<br>
+&nbsp;&nbsp;Pod B (priority: 200) → using 2 CPU<br><br>
+New pod arrives:<br>
+&nbsp;&nbsp;Pod C (priority: 1000) → needs 2 CPU → no room!<br><br>
+Result: Pod A evicted (lowest priority) → Pod C scheduled ✅<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pod B stays (wasn't needed)
+          </div>
+
+          <p style="margin-top: 1rem;"><strong>Scenario 2: PreemptLowerPriority — multiple evictions</strong></p>
+          <div class="flow" style="text-align: left;">
+Node: 4 CPU total, fully used<br><br>
+Running:<br>
+&nbsp;&nbsp;Pod A (priority: 100) → using 1 CPU<br>
+&nbsp;&nbsp;Pod B (priority: 100) → using 1 CPU<br>
+&nbsp;&nbsp;Pod C (priority: 500) → using 2 CPU<br><br>
+New pod arrives:<br>
+&nbsp;&nbsp;Pod D (priority: 1000) → needs 3 CPU → no room!<br><br>
+Result: Pod A + Pod B evicted (frees 2 CPU, not enough)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pod C also evicted (frees 2 more CPU)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pod D scheduled ✅
+          </div>
+
+          <p style="margin-top: 1rem;"><strong>Scenario 3: preemptionPolicy: Never</strong></p>
+          <div class="flow" style="text-align: left;">
+Node: 4 CPU total, fully used<br><br>
+Running:<br>
+&nbsp;&nbsp;Pod A (priority: 100) → using 4 CPU<br><br>
+New pod arrives:<br>
+&nbsp;&nbsp;Pod B (priority: 1000, policy: Never) → needs 2 CPU<br><br>
+Result: Pod A NOT evicted — policy says "Never" 🚫<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pod B stays Pending — waits in queue<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;When resources free up, Pod B gets them first<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(queue is sorted by priority, not first-come)
           </div>
         </div>
       </div>
