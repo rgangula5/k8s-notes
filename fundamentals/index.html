@@ -448,6 +448,7 @@
     <a href="#deployments">🚀 Deployments</a>
     <a href="#services">🌐 Services</a>
     <a href="#namespaces">📂 Namespaces</a>
+    <a href="#scheduling">📅 Scheduling</a>
     <a href="#commands">⌨️ Commands</a>
     <a href="#cka-tips">🎯 CKA Tips</a>
   </nav>
@@ -1085,6 +1086,380 @@ kubectl config set-context --current --namespace=dev</code></pre>
     <span class="yaml-key">requests.memory:</span> <span class="yaml-val">4Gi</span>
     <span class="yaml-key">limits.cpu:</span> <span class="yaml-val">"8"</span>
     <span class="yaml-key">limits.memory:</span> <span class="yaml-val">8Gi</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ════════════════ SCHEDULING ════════════════ -->
+    <section class="section" id="scheduling">
+      <div class="section-header">
+        <span class="icon">📅</span>
+        <h2>Scheduling</h2>
+      </div>
+
+      <!-- Manual Scheduling / Binding -->
+      <div class="card">
+        <h3>Manual Scheduling (Binding)</h3>
+        <p>If no scheduler is running, you can manually assign pods to nodes using a <span class="inline-code">Binding</span> object.</p>
+        <pre><code><span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">Binding</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>              <span class="yaml-comment"># ← this is the pod name</span>
+<span class="yaml-key">target:</span>
+  <span class="yaml-key">apiVersion:</span> <span class="yaml-val">v1</span>
+  <span class="yaml-key">kind:</span> <span class="yaml-val">Node</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">worker-node-1</span>      <span class="yaml-comment"># ← assign to this node</span></code></pre>
+        <p style="margin-top: 0.5rem;">Posted to: <span class="inline-code">POST /api/v1/namespaces/default/pods/nginx/binding</span></p>
+      </div>
+
+      <!-- Taints & Tolerations -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🐛 Taints & Tolerations</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Think of it like <strong>bug spray</strong>: <strong>Taint</strong> = spray on a node (repels pods). <strong>Toleration</strong> = immunity on a pod (can tolerate the spray).</p>
+
+          <pre><code><span class="yaml-comment"># Taint a node</span>
+kubectl taint nodes node1 app=blue:NoSchedule
+
+<span class="yaml-comment"># Remove a taint (add - at the end)</span>
+kubectl taint nodes node1 app=blue:NoSchedule-</code></pre>
+
+          <pre><code><span class="yaml-comment"># Pod with toleration</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">tolerations:</span>
+    - <span class="yaml-key">key:</span> <span class="yaml-str">"app"</span>
+      <span class="yaml-key">operator:</span> <span class="yaml-str">"Equal"</span>
+      <span class="yaml-key">value:</span> <span class="yaml-str">"blue"</span>
+      <span class="yaml-key">effect:</span> <span class="yaml-str">"NoSchedule"</span></code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">3 Taint Effects</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Effect</th><th>Existing Pods</th><th>New Pods</th></tr></thead>
+              <tbody>
+                <tr><td><strong>NoSchedule</strong></td><td>Stay ✅</td><td>Blocked ❌</td></tr>
+                <tr><td><strong>PreferNoSchedule</strong></td><td>Stay ✅</td><td>Try to avoid ⚠️</td></tr>
+                <tr><td><strong>NoExecute</strong></td><td>Evicted ❌</td><td>Blocked ❌</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-cyan); margin: 1rem 0 0.5rem;">Operators</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Operator</th><th>Needs value?</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><span class="inline-code">Equal</span></td><td>Yes</td><td>Key <strong>and</strong> value must match</td></tr>
+                <tr><td><span class="inline-code">Exists</span></td><td>No</td><td>Just the key must exist (wildcard for value)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warn">
+            ⚠️ Taints & tolerations <strong>don't guarantee</strong> a pod goes to a specific node — they only <strong>prevent</strong> pods from going where they shouldn't. A tolerated pod can still land on a non-tainted node.
+          </div>
+          <div class="callout tip">
+            💡 The master node has a taint by default: <span class="inline-code">node-role.kubernetes.io/control-plane:NoSchedule</span> — that's why your pods never get scheduled on it.
+          </div>
+        </div>
+      </div>
+
+      <!-- Node Selector -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🏷️ Node Selector</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Simple way to attract a pod to a labeled node.</p>
+          <pre><code><span class="yaml-comment"># Step 1: Label the node</span>
+kubectl label node worker-1 size=large
+
+<span class="yaml-comment"># Step 2: Use nodeSelector in pod spec</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">nodeSelector:</span>
+    <span class="yaml-key">size:</span> <span class="yaml-str">large</span>
+  <span class="yaml-key">containers:</span>
+    - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">Behavior</h4>
+          <div class="flow">
+Node (label: size=large):<br>
+&nbsp;&nbsp;Pod with nodeSelector: size=large → Goes here ✅<br>
+&nbsp;&nbsp;Pod with nodeSelector: size=small → Blocked ❌<br>
+&nbsp;&nbsp;Pod with no nodeSelector → CAN go here ✅ (no protection!)<br><br>
+Node (no label):<br>
+&nbsp;&nbsp;Pod with nodeSelector: size=large → Blocked ❌ (stays Pending)
+          </div>
+
+          <div class="callout warn">
+            ⚠️ nodeSelector only controls <strong>where the pod goes</strong> — it doesn't protect the node from other pods. Pods without nodeSelector can still land on labeled nodes.
+          </div>
+        </div>
+      </div>
+
+      <!-- Node Affinity -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🎯 Node Affinity</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Advanced version of nodeSelector — same behavior, more powerful expressions.</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Feature</th><th>nodeSelector</th><th>nodeAffinity</th></tr></thead>
+              <tbody>
+                <tr><td>Exact match</td><td>✅</td><td>✅</td></tr>
+                <tr><td><code>In</code> (multiple values)</td><td>❌</td><td>✅</td></tr>
+                <tr><td><code>NotIn</code></td><td>❌</td><td>✅</td></tr>
+                <tr><td><code>Exists</code> (key only)</td><td>❌</td><td>✅</td></tr>
+                <tr><td><code>DoesNotExist</code></td><td>❌</td><td>✅</td></tr>
+                <tr><td><code>Gt</code> / <code>Lt</code></td><td>❌</td><td>✅</td></tr>
+                <tr><td>Preferred (soft rule)</td><td>❌</td><td>✅</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-cyan); margin: 1rem 0 0.5rem;">Two Types</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Type</th><th>Scheduling</th><th>After Running</th></tr></thead>
+              <tbody>
+                <tr><td><code>requiredDuringSchedulingIgnoredDuringExecution</code></td><td><strong>Must</strong> match or stays Pending</td><td>Ignore label changes</td></tr>
+                <tr><td><code>preferredDuringSchedulingIgnoredDuringExecution</code></td><td><strong>Try</strong> to match, but schedule anywhere</td><td>Ignore label changes</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout tip">
+            💡 <strong>required</strong> = hard rule (must match) | <strong>preferred</strong> = soft rule (try but not mandatory) | <strong>ignored</strong> = don't evict running pods if labels change later
+          </div>
+        </div>
+      </div>
+
+      <!-- When to use what -->
+      <div class="card">
+        <h3>🧭 When to Use What?</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Tool</th><th>Purpose</th><th>Direction</th></tr></thead>
+            <tbody>
+              <tr><td><strong>nodeSelector</strong></td><td>Pin pod to a labeled node (simple)</td><td>Pod → Node 🎯</td></tr>
+              <tr><td><strong>nodeAffinity</strong></td><td>Pin pod to a labeled node (advanced)</td><td>Pod → Node 🎯</td></tr>
+              <tr><td><strong>Taints & Tolerations</strong></td><td>Keep unwanted pods away from a node</td><td>Node → repels Pods 🚫</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">
+          💡 To <strong>guarantee</strong> a pod runs on a specific node and nothing else runs there — combine <strong>both</strong>: taint the node (repel others) + nodeAffinity on the pod (attract it there) + toleration on the pod (allow past the taint).
+        </div>
+      </div>
+
+      <!-- Resource Requests & Limits -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📊 Resource Requests & Limits</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <pre><code><span class="yaml-key">spec:</span>
+  <span class="yaml-key">containers:</span>
+    - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">resources:</span>
+        <span class="yaml-key">requests:</span>            <span class="yaml-comment"># guaranteed minimum</span>
+          <span class="yaml-key">cpu:</span> <span class="yaml-str">"500m"</span>
+          <span class="yaml-key">memory:</span> <span class="yaml-str">"256Mi"</span>
+        <span class="yaml-key">limits:</span>              <span class="yaml-comment"># maximum allowed</span>
+          <span class="yaml-key">memory:</span> <span class="yaml-str">"512Mi"</span>    <span class="yaml-comment"># always limit memory!</span>
+          <span class="yaml-comment"># cpu: no limit (let it burst safely)</span></code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">4 Possible Combinations</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Requests</th><th>Limits</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>❌ None</td><td>❌ None</td><td>No reservation, no cap — pod can consume everything</td></tr>
+                <tr><td>2</td><td>❌ None</td><td>✅ Set</td><td>K8s auto-sets requests = limits</td></tr>
+                <tr><td>3</td><td>✅ Set</td><td>✅ Set</td><td>Guaranteed minimum + hard cap — <strong>safest</strong> ✅</td></tr>
+                <tr><td>4</td><td>✅ Set</td><td>❌ None</td><td>Guaranteed minimum, can burst — <strong>most efficient</strong> for CPU</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-red); margin: 1rem 0 0.5rem;">CPU vs Memory — Exceeding Limits</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th></th><th>CPU</th><th>Memory</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Type</strong></td><td>Compressible</td><td>Incompressible</td></tr>
+                <tr><td><strong>Exceeds limit</strong></td><td>Throttled 🐢 (slowed)</td><td>OOMKilled 💀 (terminated)</td></tr>
+                <tr><td><strong>Can reclaim?</strong></td><td>✅ Yes</td><td>❌ No — must kill pod</td></tr>
+                <tr><td><strong>Best practice</strong></td><td>No limit (let burst)</td><td>Always set limit</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="color: var(--accent-green); margin: 1rem 0 0.5rem;">LimitRange & ResourceQuota</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th></th><th>LimitRange</th><th>ResourceQuota</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Scope</strong></td><td>Per container/pod</td><td>Per namespace (total)</td></tr>
+                <tr><td><strong>Purpose</strong></td><td>Default requests/limits for each pod</td><td>Cap total resources for all pods combined</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DaemonSets -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>👹 DaemonSets</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Ensures <strong>one pod per node</strong> — automatically. When a new node joins, a pod is added. When a node is removed, the pod is deleted.</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th></th><th>ReplicaSet</th><th>DaemonSet</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Replicas</strong></td><td>You specify count</td><td>One per node (automatic)</td></tr>
+                <tr><td><strong>New node added</strong></td><td>No change</td><td>Pod added ✅</td></tr>
+                <tr><td><strong>Node removed</strong></td><td>No change</td><td>Pod removed</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top: 0.75rem;"><strong>Common examples:</strong> kube-proxy, CNI plugins (weave/calico), log collectors (Fluentd), monitoring agents.</p>
+
+          <pre><code><span class="yaml-comment"># No imperative command — must use YAML</span>
+<span class="yaml-comment"># Tip: generate Deployment YAML, change kind to DaemonSet, remove replicas</span>
+
+kubectl get daemonsets
+kubectl get ds                          <span class="yaml-comment"># short name</span>
+kubectl describe daemonset &lt;name&gt;
+kubectl get ds --all-namespaces</code></pre>
+
+          <div class="callout tip">
+            💡 From K8s v1.12+, DaemonSets use the <strong>default scheduler</strong> with nodeAffinity (instead of directly setting nodeName). This means taints, tolerations, and resource checks are all respected.
+          </div>
+        </div>
+      </div>
+
+      <!-- Static Pods -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📌 Static Pods</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>Pods managed <strong>directly by kubelet</strong> — no API server needed.</p>
+          <ul>
+            <li>Place YAML files in <span class="inline-code">/etc/kubernetes/manifests/</span> (default path)</li>
+            <li>Kubelet periodically monitors this directory</li>
+            <li>Add file → pod created. Delete file → pod deleted. Pod crashes → kubelet restarts it</li>
+            <li>Only <strong>pods</strong> — no services, deployments, or replicasets (kubelet only understands pods)</li>
+          </ul>
+
+          <pre><code><span class="yaml-comment"># Check static pod path</span>
+cat /var/lib/kubelet/config.yaml | grep staticPodPath
+
+<span class="yaml-comment"># Or check kubelet process</span>
+ps aux | grep kubelet | grep config
+
+<span class="yaml-comment"># Without API server, use crictl to see pods</span>
+crictl ps</code></pre>
+
+          <h4 style="color: var(--accent-cyan); margin: 1rem 0 0.5rem;">#1 Use Case: Bootstrapping the Control Plane</h4>
+          <p>This is how <strong>kubeadm</strong> starts the cluster — kubelet creates control plane components as static pods:</p>
+          <div class="flow">
+            /etc/kubernetes/manifests/<br>
+            ├── kube-apiserver.yaml<br>
+            ├── kube-controller-manager.yaml<br>
+            ├── kube-scheduler.yaml<br>
+            └── etcd.yaml
+          </div>
+          <div class="callout tip">
+            💡 Chicken-and-egg solved! Kubelet creates the API server as a static pod — no API server needed to start the API server.
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority & Preemption -->
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>⚖️ Priority & Preemption</h3>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="collapsible-body">
+          <p>PriorityClass is just a <strong>name + value</strong> pair. Higher value = higher priority.</p>
+
+          <pre><code><span class="yaml-comment"># Step 1: Create PriorityClass</span>
+<span class="yaml-key">apiVersion:</span> <span class="yaml-val">scheduling.k8s.io/v1</span>
+<span class="yaml-key">kind:</span> <span class="yaml-val">PriorityClass</span>
+<span class="yaml-key">metadata:</span>
+  <span class="yaml-key">name:</span> <span class="yaml-str">high-priority</span>
+<span class="yaml-key">value:</span> <span class="yaml-val">1000000</span>
+<span class="yaml-key">preemptionPolicy:</span> <span class="yaml-val">PreemptLowerPriority</span>
+<span class="yaml-key">globalDefault:</span> <span class="yaml-val">false</span>
+
+<span class="yaml-comment"># Step 2: Use in pod spec</span>
+<span class="yaml-key">spec:</span>
+  <span class="yaml-key">priorityClassName:</span> <span class="yaml-str">high-priority</span>
+  <span class="yaml-key">containers:</span>
+    - <span class="yaml-key">name:</span> <span class="yaml-str">nginx</span>
+      <span class="yaml-key">image:</span> <span class="yaml-str">nginx</span></code></pre>
+
+          <pre><code>kubectl get priorityclass</code></pre>
+
+          <h4 style="color: var(--accent-orange); margin: 1rem 0 0.5rem;">Key Points</h4>
+          <ul>
+            <li>Only applies to <strong>pods</strong> (for Deployments, put it in the pod template)</li>
+            <li><span class="inline-code">globalDefault: true</span> — pods without priorityClassName get this priority. Only <strong>one</strong> PriorityClass can be the global default</li>
+          </ul>
+
+          <h4 style="color: var(--accent-red); margin: 1rem 0 0.5rem;">Preemption Policy</h4>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Policy</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td><span class="inline-code">PreemptLowerPriority</span></td><td><strong>Default</strong> — evict lower priority pods to make room</td></tr>
+                <tr><td><span class="inline-code">Never</span></td><td>Don't evict — just wait in the queue until resources free up</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editing Pods & Deployments -->
+      <div class="card">
+        <h3>✏️ Editing Pods vs Deployments</h3>
+        <div class="comparison">
+          <div class="item">
+            <h4 style="color: var(--accent-orange);">Pod (limited editing)</h4>
+            <p>Only 4 fields editable on a running pod:</p>
+            <ul>
+              <li><code>spec.containers[*].image</code></li>
+              <li><code>spec.initContainers[*].image</code></li>
+              <li><code>spec.activeDeadlineSeconds</code></li>
+              <li><code>spec.tolerations</code></li>
+            </ul>
+            <p style="margin-top: 0.5rem;">Everything else → delete &amp; recreate.</p>
+          </div>
+          <div class="item">
+            <h4 style="color: var(--accent-green);">Deployment (edit anything)</h4>
+            <p><code>kubectl edit deployment my-deploy</code></p>
+            <p style="margin-top: 0.5rem;">Edit any field — K8s auto-deletes old pods and creates new ones. Much easier!</p>
+          </div>
+        </div>
       </div>
     </section>
 
